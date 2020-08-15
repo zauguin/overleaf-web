@@ -141,6 +141,16 @@ script(type='text/ng-template', id='newFileModalTemplate')
 										span(ng-show="state.isOutputFilesMode") select from source files
 										span(ng-show="!state.isOutputFilesMode") select from output files
 
+								div.toggle-filtered-output-files-button(ng-if="state.isOutputFilesMode")
+									| (
+									a(
+										href="#"
+										ng-click="toggleFilteredOutputFilesMode()"
+									)
+										span(ng-show="state.isFilteredOutputFilesMode") show all files
+										span(ng-show="!state.isFilteredOutputFilesMode") restrict to primary output files
+									| )
+
 								.form-controls.row-spaced-small
 									label(for="name") #{translate("file_name_in_this_project")}
 									input.form-control(

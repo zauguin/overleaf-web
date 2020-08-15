@@ -334,6 +334,7 @@ App.controller('ProjectLinkedFileModalController', function(
     compile: false
   }
   $scope.state.isOutputFilesMode = false
+  $scope.state.isFilteredOutputFilesMode = true
   $scope.state.error = false
 
   $scope.$watch('data.selectedProjectId', function(newVal, oldVal) {
@@ -344,7 +345,8 @@ App.controller('ProjectLinkedFileModalController', function(
     $scope.data.selectedProjectOutputFile = null
     if ($scope.state.isOutputFilesMode) {
       return $scope.compileProjectAndGetOutputFiles(
-        $scope.data.selectedProjectId
+        $scope.data.selectedProjectId,
+        $scope.state.isFilteredOutputFilesMode
       )
     } else {
       return $scope.getProjectEntities($scope.data.selectedProjectId)
@@ -358,11 +360,26 @@ App.controller('ProjectLinkedFileModalController', function(
     $scope.data.selectedProjectOutputFile = null
     if (newVal === true) {
       return $scope.compileProjectAndGetOutputFiles(
-        $scope.data.selectedProjectId
+        $scope.data.selectedProjectId,
+        $scope.state.isFilteredOutputFilesMode
       )
     } else {
       return $scope.getProjectEntities($scope.data.selectedProjectId)
     }
+  })
+
+  $scope.$watch('state.isFilteredOutputFilesMode', function(newVal, oldVal) {
+    if (!newVal && !oldVal) {
+      return
+    }
+    if ($scope.state.isOutputFilesMode !== true) {
+      return
+    }
+    $scope.data.selectedProjectOutputFile = null
+    return $scope.compileProjectAndGetOutputFiles(
+      $scope.data.selectedProjectId,
+      newVal
+    )
   })
 
   // auto-set filename based on selected file
@@ -413,6 +430,13 @@ App.controller('ProjectLinkedFileModalController', function(
       return
     }
     return ($scope.state.isOutputFilesMode = !$scope.state.isOutputFilesMode)
+  }
+
+  $scope.toggleFilteredOutputFilesMode = function() {
+    if (!$scope.data.selectedProjectId) {
+      return
+    }
+    return ($scope.state.isFilteredOutputFilesMode = !$scope.state.isFilteredOutputFilesMode)
   }
 
   $scope.shouldEnableProjectSelect = function() {
@@ -498,7 +522,7 @@ App.controller('ProjectLinkedFileModalController', function(
       .catch(err => _reset({ err: true }))
   }
 
-  $scope.compileProjectAndGetOutputFiles = project_id => {
+  $scope.compileProjectAndGetOutputFiles = (project_id, filter) => {
     _setInFlight('compile')
     return ide.$http
       .post(`/project/${project_id}/compile`, {
@@ -509,9 +533,9 @@ App.controller('ProjectLinkedFileModalController', function(
       })
       .then(function(resp) {
         if (resp.data.status === 'success') {
-          const filteredFiles = resp.data.outputFiles.filter(f =>
+          const filteredFiles = filter ? resp.data.outputFiles.filter(f =>
             f.path.match(/.*\.(pdf|png|jpeg|jpg|gif)/)
-          )
+          ) : resp.data.outputFiles
           $scope.data.projectOutputFiles = filteredFiles
           $scope.data.buildId = __guard__(
             filteredFiles != null ? filteredFiles[0] : undefined,
